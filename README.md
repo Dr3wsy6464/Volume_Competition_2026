@@ -1,106 +1,89 @@
-# Volume Competition 2026
+# Volume Competition 2026 — session edition
 
-## What broke
-The original inline module declares `const firebaseConfig` twice in the same scope.
-That is a SyntaxError, preventing the entire module from executing and leaving
-all buttons unbound. The second declaration also references undefined
-`fallbackConfig`. The form already called preventDefault(); refreshing was not
-the primary bug.
+Overwrite index.html, style.css and app.js together in the existing GitHub Pages
+repository. The Firebase project configuration is already included. No build step.
+Paste the entire firestore.rules file into Firebase Console → Firestore Database
+→ Rules, replacing the old rules, and publish. Keep Email/Password authentication
+enabled. GitHub Pages does not publish Firestore rules for you.
 
-## Files and deployment
-Use the three-file version: index.html, style.css and app.js. Upload all three to
-the root of the existing GitHub repository, replacing its index.html. Commit to
-the branch/folder configured for GitHub Pages. All asset URLs are relative, so
-/Volume_Competition_2026/ works. No build step, npm or server is needed.
-Do not open index.html via file://; serve over HTTP or use GitHub Pages.
-For local preview: `python3 -m http.server 8000` from this folder.
+## Behaviour
+- Competition: 1 November–31 December 2026 inclusive, Australia/Brisbane dates.
+  END in app.js is exclusive. Practice sessions count in lifetime stats, heatmap,
+  streak, weekly boss and weekly chart, but not the competition leaderboard/payout.
+- Payout: winner's own cumulative competition volume / 1000 in AUD.
+- Each live session contains up to 12 exercise blocks. Add another block for
+  changed weight/reps. Pure bodyweight is excluded; enter added external load only.
+- Routine templates include exercise names, weight, reps and sets. A routine with
+  the same case-insensitive name overwrites that user's existing routine.
+- Ghost hints show all matching blocks in the most recent session for that lift.
+- Stopwatch resumes from the start timestamp after backgrounding/reloading.
+  The optional rest timer survives backgrounding but resets on reload/sign-out;
+  vibration depends on device/browser support. Background notifications are not
+  guaranteed; countdown catches up when the app returns to the foreground.
+- Streak: distinct training dates in the current chain. The gap from the previous
+  session's end to the next start must be strictly less than 48 hours; the streak
+  expires 48 hours after the last end. Two sessions on one date count once.
+- Weekly boss rotates Deadlift → Squat → Bench Press by Brisbane Monday. Exercise
+  matching ignores case and extra spaces but not alternate exercise names. For
+  example, Romanian Deadlift is not Deadlift. All matching blocks within one
+  session are summed; best single session wins. Ties share the current badge.
+- Ghost racer: this week's daily/cumulative volume, plus selected opponent's
+  actual previous-week data aligned Monday–Sunday. It is not a forecast.
+- Heatmap: rolling 91 calendar days; daily volume sets colour intensity.
+- RPG comparison assumes an illustrative 6,000 kg per African elephant.
+- Crown: unique global competition leader only. No crown for a tie or one athlete.
+  Tug-of-war compares you with the selected opponent (default highest-ranked other).
+- Username cooldown begins at registration, then resets on each change. Existing
+  legacy profiles without nameChangedAt get one change, then enter the cooldown.
+  Firestore request.time and timestamps enforce this; editing the browser clock
+  does not bypass the server rule. Profile deletion is deliberately prohibited.
 
-The original Firebase project configuration and SDK 11.6.1 are retained.
-Firebase web config is public client configuration; access is controlled by rules.
+## Offline use
+Firestore IndexedDB persistence uses persistentLocalCache with multi-tab support.
+Session drafts and a durable session outbox are also stored on this browser,
+partitioned by Auth UID. Finish immediately queues the entire session document
+under a stable ID. It stays marked pending until server acknowledgement. Failed
+writes are retained locally and can be retried from History after fixing the cause.
+Session deletion uses the same queue; legacy grouped deletions use an atomic batch.
+Routines and exercise memory use Firestore's own persistent write queue.
 
-## Firebase console steps
-1. In the volume-competition project, enable Authentication → Sign-in method →
-   Email/Password. Ensure the app is pointed at the correct project.
-2. Check Authentication → Settings → Authorized domains. Add your Pages hostname
-   (USERNAME.github.io, no scheme or repository path) and localhost for local work
-   if required by your configuration. Follow any domain error reported by Firebase.
-3. Create Cloud Firestore if not already created. The app works with unexpired
-   test-mode rules. If those expire, reads/writes fail with a visible permission
-   error; authentication can still succeed because it is a separate service.
-4. Publish firestore.rules in Firestore → Rules. GitHub Pages does NOT deploy
-   Firestore rules. These rules allow signed-in accounts to read leaderboard data
-   and allow only the owner to create/delete their workout records or write their
-   profile. Unmatched paths are denied. Replace the existing permissive rule set;
-   a remaining broad allow rule would override these restrictions.
-5. For this private two-person competition, register both accounts, copy their UIDs
-   from Authentication → Users, and fill in competitor() in firestore.rules.
-   Replace signedIn() with competitor() in the profile and workout match blocks
-   (do NOT replace the signedIn() call inside competitor itself). Publish again.
-   This prevents a third registrant from reading or joining the competition.
-   The initial signed-in-only rules deliberately support registration before UIDs
-   are known, but allow ANY authenticated account into the leaderboard.
+Open and sign in while online before entering the gym, then keep the app loaded.
+Firestore caching does not guarantee cold-start access to HTML/CDN scripts offline.
+A fully installable offline app shell would require a service worker; this version
+keeps the requested three frontend files. Use a browser that supports IndexedDB;
+private browsing/storage restrictions can prevent persistence. Do not clear site
+data while sessions are pending. Active sessions are local to this device; use one
+editing tab/device at a time. No live authentication or username changes offline.
 
-Rules are independent of profile existence. The app never writes undefined
-metadata and never mutates Firebase User.displayName directly. Profile-write
-failure does not invalidate account creation or block dashboard entry. Errors
-remain visible in a role=alert banner. SDK/module download failure also displays
-an error rather than leaving a silent screen.
+## Data layout and compatibility
+Shared authenticated collections:
+artifacts/volume-challenge-app/public/data/sessions/{sessionId}
+artifacts/volume-challenge-app/public/data/profiles/{uid}
+artifacts/volume-challenge-app/public/data/workouts/{legacyId}
 
-## Data compatibility
-Existing workouts remain at:
-artifacts/volume-challenge-app/public/data/workouts/{autoId}
-Profiles use:
-artifacts/volume-challenge-app/public/data/profiles/{authUid}
-No composite index needed. Email is kept in Auth, not the shared profile collection.
-Legacy workouts without session/createdAt are readable. Invalid, zero-load, or
-malformed legacy rows are omitted from statistics/history; their stored records
-are not deleted. Valid records without names fall back to Athlete. Volumes are
-recalculated from weight, reps and sets, not trusted from the stored total.
-Listeners are unsubscribed and view data cleared on sign-out/account switch.
+Private collections:
+users/{uid}/routines/{routineId}
+users/{uid}/exercises/{exerciseId}
 
-## Competition assumptions
-- Start inclusive: 2026-11-01. End exclusive: 2027-01-01, Brisbane calendar dates.
-  To include January 1, change END in app.js to 2027-01-02 and update UI text.
-- Entries outside the competition may be logged for practice; only in-period
-  entries contribute to stats, ranking, payout and charts. Future entries rejected
-  in the UI. Current date uses Australia/Brisbane, not UTC.
-- Only external loads count. Zero-load bodyweight entries are rejected. For a
-  weighted pull-up, enter the attached weight only. The app cannot verify that a
-  person has entered the correct physical load; agree equipment conventions.
-- One entry means identical load and reps across those sets. Log varied sets
-  separately. A session is a date plus case-insensitive session label. Blank
-  labels on a date are grouped into one session; use Morning/Evening for two.
-- Winner receives their own total kg / 1000 in AUD, not the combined total or
-  margin of victory. A tie is displayed; no tie-break rule was supplied.
-- Same display names remain separate athletes because aggregation uses Auth UID.
-- Profile and workout notes can be read by all accounts allowed by the rules.
-- The app keeps exercise/load/reps/sets/date/session after saving for fast logging.
-  Wait for the save confirmation to avoid duplicate submissions.
-- No offline durability claim: pending writes require keeping the page open.
-  Browser session persistence is attempted if local auth persistence fails.
-- Rules enforce ownership, types and volume arithmetic. They do not prove a lift
-  happened, enforce an immutable end-of-competition lock, or validate calendar
-  dates beyond shape. This is a trust-based challenge, not audited prize software.
+Session exercises are a nested array; totals are always calculated from their
+weight × reps × sets. No denormalized total can become stale after a delete.
+The rules validate every exercise up to the 12-block cap, ownership and field types.
+Existing workout records are grouped by user/date/session label in History and
+continue contributing to applicable totals. They are not copied, so no duplicate
+migration totals. Original logs have no duration: show 'unavailable' and exclude
+from the strict timed streak. New code cannot write the old workout format, so
+update all devices to the new frontend after publishing these rules.
 
-## Validation and limits
-See VALIDATION.md. No live accounts were created, no real workout data was changed,
-and no Firebase console settings, rules or GitHub deployment were changed here.
-Use the console Rules Playground/emulator before publishing restrictive rules:
-- anonymous read/create: denied
-- authenticated own profile/create workout: allowed with matching fields
-- another user's workout deletion/profile write: denied
-- invalid volume or zero load: denied
-- permitted account can read the full collection
-- non-competitor denied after enabling the UID allowlist
+Every signed-in account can read shared profiles/sessions/legacy logs, including
+session notes, for the global leaderboard. Each account can only write its own
+records; routines and exercise memory are private. These rules do not restrict
+registration to two people. This is a trust-based challenge: client-reported lifts
+and dates are not independently verified. No automated payment is made.
 
-Live smoke check: register → dashboard → log a practice entry → confirm it in
-Firestore/history → reload → verify session and entry persist → log out → sign in.
-Repeat in a second browser with the other account to verify real-time comparison.
-Test charts with November/December fixtures in a separate test project or after
-competition starts; don't insert fabricated entries into the actual competition.
-
-Firebase references:
-https://firebase.google.com/docs/auth/web/password-auth
-https://firebase.google.com/docs/auth/web/auth-state-persistence
-https://firebase.google.com/docs/firestore/security/rules-conditions
-https://firebase.google.com/docs/firestore/query-data/listen
+## Verification
+Run: node tests/test-logic.cjs
+See VALIDATION.md for coverage and limitations. Test the rules in Firebase Console
+before relying on them: own writes allowed, other-user mutations denied, username
+changes within seven days denied, profile deletion denied, invalid exercise denied.
+Try offline mode after signing in: finish a session, verify pending status, restore
+connectivity and confirm it syncs once. Test a second account in a separate browser.
