@@ -1,0 +1,9 @@
+const firebaseConfig = {
+    apiKey: "AIzaSyB3gR2Lu5Lj0OLVgv83Qdu2DGMqCThL0wg",
+    authDomain: "volume-competition.firebaseapp.com",
+    projectId: "volume-competition",
+    storageBucket: "volume-competition.firebasestorage.app",
+    messagingSenderId: "681802026275",
+    appId: "1:681802026275:web:a4ce78cdaed0f7045c5096",
+    measurementId: "G-0PZJJ53CR9"
+  };
