@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Volume Challenge Tracker</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gym: {
+                            900: '#111827',
+                            800: '#1F2937',
+                            700: '#374151',
+                            brand: '#10B981', // Emerald green for winning/active
+                            accent: '#3B82F6'  // Blue for secondary actions
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        
+        body {
+            background-color: #0f172a; /* Slate 900 */
+            color: #f8fafc;
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Hide number input spinners */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+
+        /* Toast animation */
+        @keyframes slideInUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .toast-enter { animation: slideInUp 0.3s ease-out forwards; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Custom Toast/Alert Container (Replaces native alerts) -->
+    <div id="toast-container" class="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 flex flex-col gap-2 w-[90%] max-w-md pointer-events-none"></div>
+
+    <!-- Auth Section -->
+    <main id="auth-section" class="flex-1 flex items-center justify-center p-4">
+        <div class="glass-panel p-8 rounded-2xl w-full max-w-md shadow-2xl">
+            <div class="text-center mb-8">
+                <i class="fa-solid fa-dumbbell text-4xl text-gym-brand mb-4"></i>
+                <h1 class="text-3xl font-bold">Volume Challenge</h1>
+                <p class="text-gray-400 mt-2">Sign in to log your lifts and dominate the leaderboard.</p>
+            </div>
+
+            <form id="auth-form" class="space-y-4">
+                <div id="name-field" class="hidden">
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Display Name</label>
+                    <input type="text" id="auth-name" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:ring-2 focus:ring-gym-brand outline-none transition" placeholder="e.g., Chris">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Email</label>
+                    <input type="email" id="auth-email" required class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:ring-2 focus:ring-gym-brand outline-none transition" placeholder="you@example.com">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Password</label>
+                    <input type="password" id="auth-password" required class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:ring-2 focus:ring-gym-brand outline-none transition" placeholder="••••••••">
+                </div>
+                <button type="submit" id="auth-submit" class="w-full bg-gym-brand hover:bg-emerald-400 text-slate-900 font-bold py-3 rounded-lg transition transform hover:-translate-y-0.5 mt-6">
+                    Sign In
+                </button>
+            </form>
+
+            <div class="mt-6 text-center">
+                <p class="text-gray-400 text-sm">
+                    <span id="auth-toggle-text">Don't have an account?</span>
+                    <button id="auth-toggle-btn" class="text-gym-brand hover:underline font-semibold ml-1 focus:outline-none">Sign Up</button>
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Main App Section (Hidden by default) -->
+    <div id="app-section" class="hidden flex-col min-h-screen">
+        
+        <!-- Navigation Bar -->
+        <nav class="glass-panel sticky top-0 z-40 border-b-0 shadow-md">
+            <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between h-16">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-dumbbell text-gym-brand"></i>
+                        <span class="font-bold text-lg tracking-tight">Challenge 2026</span>
+                    </div>
+                    <!-- Desktop Nav -->
+                    <div class="hidden md:flex space-x-8">
+                        <button onclick="switchTab('log')" id="nav-log" class="nav-btn text-gym-brand border-b-2 border-gym-brand pb-1 font-semibold transition">Log Workout</button>
+                        <button onclick="switchTab('leaderboard')" id="nav-leaderboard" class="nav-btn text-gray-400 hover:text-white pb-1 font-semibold transition">Leaderboard</button>
+                        <button onclick="switchTab('profile')" id="nav-profile" class="nav-btn text-gray-400 hover:text-white pb-1 font-semibold transition">Profile</button>
+                    </div>
+                    <!-- Logout & Mobile Nav Toggle -->
+                    <div class="flex items-center gap-4">
+                        <button id="logout-btn" class="text-sm text-gray-400 hover:text-white transition"><i class="fa-solid fa-arrow-right-from-bracket mr-1"></i> Exit</button>
+                    </div>
+                </div>
+                <!-- Mobile Nav (Bottom Bar style for better touch) -->
+                <div class="md:hidden flex justify-around py-3 border-t border-slate-700">
+                    <button onclick="switchTab('log')" id="mob-nav-log" class="nav-btn text-gym-brand flex flex-col items-center gap-1 transition"><i class="fa-solid fa-plus text-xl"></i><span class="text-xs">Log</span></button>
+                    <button onclick="switchTab('leaderboard')" id="mob-nav-leaderboard" class="nav-btn text-gray-400 flex flex-col items-center gap-1 transition"><i class="fa-solid fa-trophy text-xl"></i><span class="text-xs">Rank</span></button>
+                    <button onclick="switchTab('profile')" id="mob-nav-profile" class="nav-btn text-gray-400 flex flex-col items-center gap-1 transition"><i class="fa-solid fa-user text-xl"></i><span class="text-xs">Profile</span></button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Content Area -->
+        <main class="flex-1 w-full max-w-4xl mx-auto p-4 sm:p-6 lg:p-8 relative">
+            
+            <!-- Tab 1: Log Workout -->
+            <section id="view-log" class="tab-view space-y-6">
+                <div class="glass-panel p-6 sm:p-8 rounded-2xl">
+                    <h2 class="text-2xl font-bold mb-6 border-b border-slate-700 pb-2">Log a Set</h2>
+                    <form id="workout-form" class="space-y-5">
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-1">Exercise Name</label>
+                            <input type="text" id="log-exercise" required class="w-full bg-slate-800 border border-slate-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-gym-brand outline-none" placeholder="e.g., Sled Leg Press">
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-1">Weight (kg)</label>
+                                <input type="number" id="log-weight" step="0.5" min="0" required class="w-full bg-slate-800 border border-slate-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-gym-brand outline-none text-center" placeholder="0">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-1">Reps</label>
+                                <input type="number" id="log-reps" min="1" required class="w-full bg-slate-800 border border-slate-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-gym-brand outline-none text-center" placeholder="0">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-1">Sets</label>
+                                <input type="number" id="log-sets" min="1" required class="w-full bg-slate-800 border border-slate-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-gym-brand outline-none text-center" placeholder="0">
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-800/50 border border-gym-brand/30 rounded-lg p-4 flex justify-between items-center mt-2">
+                            <span class="text-gray-300 font-medium">Session Volume:</span>
+                            <span class="text-2xl font-bold text-gym-brand" id="live-volume-calc">0 <span class="text-sm font-normal text-gray-400">kg</span></span>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-1">Date</label>
+                                <input type="date" id="log-date" required class="w-full bg-slate-800 border border-slate-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-gym-brand outline-none style-date">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-1">Notes (Optional)</label>
+                                <input type="text" id="log-notes" class="w-full bg-slate-800 border border-slate-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-gym-brand outline-none" placeholder="e.g., Felt heavy today">
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full bg-gym-brand hover:bg-emerald-400 text-slate-900 font-bold text-lg py-4 rounded-xl shadow-lg transition transform hover:-translate-y-1 mt-4">
+                            <i class="fa-solid fa-plus-circle mr-2"></i> Submit Volume
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Tab 2: Leaderboard -->
+            <section id="view-leaderboard" class="tab-view hidden space-y-6">
+                <!-- Cumulative Ranking -->
+                <div class="glass-panel p-6 sm:p-8 rounded-2xl">
+                    <h2 class="text-2xl font-bold mb-6 border-b border-slate-700 pb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-crown text-yellow-400"></i> Global Leaderboard
+                    </h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="text-gray-400 text-sm border-b border-slate-700">
+                                    <th class="pb-3 pl-2">Rank</th>
+                                    <th class="pb-3">Athlete</th>
+                                    <th class="pb-3 text-right pr-2">Cumulative Volume (kg)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="leaderboard-body">
+                                <!-- Dynamic rows populated by JS -->
+                                <tr><td colspan="3" class="text-center py-4 text-gray-500">Loading data...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Chart container -->
+                <div class="glass-panel p-6 sm:p-8 rounded-2xl">
+                    <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-line text-gym-accent"></i> Daily Volume Trends
+                    </h2>
+                    <div class="w-full h-[300px] relative">
+                        <canvas id="volumeChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tab 3: Profile -->
+            <section id="view-profile" class="tab-view hidden space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Quick Stats -->
+                    <div class="glass-panel p-6 rounded-2xl flex flex-col justify-center items-center text-center">
+                        <h3 class="text-gray-400 font-medium mb-2">My Total Volume</h3>
+                        <div class="text-4xl font-bold text-gym-brand" id="profile-total-volume">0</div>
+                        <p class="text-sm text-gray-500 mt-1">kilograms lifted</p>
+                    </div>
+
+                    <div class="glass-panel p-6 rounded-2xl flex flex-col justify-center items-center text-center relative overflow-hidden">
+                        <div class="absolute -right-4 -bottom-4 text-slate-700 opacity-20">
+                            <i class="fa-solid fa-fire text-8xl"></i>
+                        </div>
+                        <h3 class="text-gray-400 font-medium mb-2 relative z-10">Best Exercise</h3>
+                        <div class="text-2xl font-bold text-white relative z-10" id="profile-best-exercise">-</div>
+                        <p class="text-sm text-gym-accent mt-1 relative z-10" id="profile-best-exercise-vol">0 kg total</p>
+                    </div>
+                </div>
+
+                <!-- Export & History -->
+                <div class="glass-panel p-6 rounded-2xl">
+                    <div class="flex justify-between items-center mb-6 border-b border-slate-700 pb-2">
+                        <h2 class="text-xl font-bold">Recent Logs</h2>
+                        <button onclick="exportDataToCSV()" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm transition flex items-center gap-2">
+                            <i class="fa-solid fa-file-csv"></i> Export CSV
+                        </button>
+                    </div>
+                    
+                    <div class="space-y-3 max-h-[400px] overflow-y-auto pr-2" id="profile-history">
+                        <!-- Dynamic history logs -->
+                        <div class="text-center py-4 text-gray-500">No workouts logged yet.</div>
+                    </div>
+                </div>
+            </section>
+            
+        </main>
+    </div>
+
+    <!-- Application Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, signInWithCustomToken, updateProfile } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, onSnapshot, query, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // ======================================================================
+        // IMPORTANT: GITHUB DEPLOYMENT INSTRUCTIONS
+        // When you upload this file to your GitHub repository, replace the 
+        // fallbackConfig object below with your actual Firebase Project Config keys.
+        // ======================================================================
+        const fallbackConfig = {
+            apiKey: "YOUR_API_KEY_HERE",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // Determine App ID and Config (Supports both Immersive Environment and GitHub deployment)
+        const activeAppId = typeof __app_id !== 'undefined' ? __app_id : 'volume-challenge-app';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : fallbackConfig;
+
+        // Initialize Firebase
+        let app, db, auth;
+        try {
+            app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+        } catch (e) {
+            console.error("Firebase Initialization Error. Check your config.", e);
+        }
+
+        // Global State Variables
+        let currentUser = null;
+        let isSignUpMode = false;
+        let allWorkouts = [];
+        let volumeChartInstance = null;
+
+        
+        // Custom Toast Notification System
+        window.showToast = function(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const bgColor = type === 'success' ? 'bg-emerald-500' : 'bg-red-500';
+            const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+            
+            toast.className = `toast-enter ${bgColor} text-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-3 pointer-events-auto`;
+            toast.innerHTML = `<i class="fa-solid ${icon}"></i><span class="font-medium">${message}</span>`;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(100%)';
+                toast.style.transition = 'all 0.3s ease-in';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        };
+
+        // Tab Switching Logic
+        window.switchTab = function(tabId) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-view').forEach(el => el.classList.add('hidden'));
+            // Remove active state from all nav buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('text-gym-brand', 'border-b-2', 'border-gym-brand');
+                btn.classList.add('text-gray-400');
+            });
+
+            // Show selected tab
+            document.getElementById(`view-${tabId}`).classList.remove('hidden');
+            
+            // Add active state to selected nav buttons (desktop + mobile)
+            const desktopBtn = document.getElementById(`nav-${tabId}`);
+            const mobileBtn = document.getElementById(`mob-nav-${tabId}`);
+            
+            if(desktopBtn) {
+                desktopBtn.classList.remove('text-gray-400');
+                desktopBtn.classList.add('text-gym-brand', 'border-b-2', 'border-gym-brand');
+            }
+            if(mobileBtn) {
+                mobileBtn.classList.remove('text-gray-400');
+                mobileBtn.classList.add('text-gym-brand');
+            }
+
+            // Render specific tab data if needed
+            if(tabId === 'leaderboard') renderLeaderboard();
+            if(tabId === 'profile') renderProfile();
+        };
+
+        // Live Volume Calculation on Form
+        const logInputs = ['log-weight', 'log-reps', 'log-sets'];
+        logInputs.forEach(id => {
+            document.getElementById(id).addEventListener('input', () => {
+                const w = parseFloat(document.getElementById('log-weight').value) || 0;
+                const r = parseInt(document.getElementById('log-reps').value) || 0;
+                const s = parseInt(document.getElementById('log-sets').value) || 0;
+                const total = w * r * s;
+                document.getElementById('live-volume-calc').innerHTML = `${total.toLocaleString()} <span class="text-sm font-normal text-gray-400">kg</span>`;
+            });
+        });
+
+        // Set default date to today
+        document.getElementById('log-date').valueAsDate = new Date();
+
+
+        // Toggle Auth Mode
+        document.getElementById('auth-toggle-btn').addEventListener('click', (e) => {
+            e.preventDefault();
+            isSignUpMode = !isSignUpMode;
+            const nameField = document.getElementById('name-field');
+            const submitBtn = document.getElementById('auth-submit');
+            const toggleText = document.getElementById('auth-toggle-text');
+            const toggleBtn = document.getElementById('auth-toggle-btn');
+            const nameInput = document.getElementById('auth-name');
+
+            if (isSignUpMode) {
+                nameField.classList.remove('hidden');
+                nameInput.required = true;
+                submitBtn.innerText = 'Create Account';
+                toggleText.innerText = 'Already have an account?';
+                toggleBtn.innerText = 'Sign In';
+            } else {
+                nameField.classList.add('hidden');
+                nameInput.required = false;
+                submitBtn.innerText = 'Sign In';
+                toggleText.innerText = 'Don\'t have an account?';
+                toggleBtn.innerText = 'Sign Up';
+            }
+        });
+
+        // Handle Auth Submit
+        document.getElementById('auth-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-password').value;
+            const name = document.getElementById('auth-name').value;
+
+            try {
+                const submitBtn = document.getElementById('auth-submit');
+                submitBtn.disabled = true;
+                submitBtn.innerText = 'Processing...';
+
+                if (isSignUpMode) {
+                    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                    await updateProfile(userCredential.user, { displayName: name });
+                    showToast('Account created successfully!');
+                } else {
+                    await signInWithEmailAndPassword(auth, email, password);
+                    showToast('Welcome back!');
+                }
+            } catch (error) {
+                showToast(error.message.replace('Firebase: ', ''), 'error');
+                const submitBtn = document.getElementById('auth-submit');
+                submitBtn.disabled = false;
+                submitBtn.innerText = isSignUpMode ? 'Create Account' : 'Sign In';
+            }
+        });
+
+        // Handle Logout
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            signOut(auth).then(() => {
+                showToast('Logged out');
+            });
+        });
+
+
+        // Attempt Custom Token login if provided by environment
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+            signInWithCustomToken(auth, __initial_auth_token).catch(err => console.error("Custom token login failed", err));
+        }
+
+        // Auth State Observer
+        let unsubWorkouts = null;
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('auth-section').classList.add('hidden');
+                document.getElementById('app-section').classList.remove('hidden');
+                document.getElementById('app-section').classList.add('flex');
+                
+                // Set name fallback if missing
+                if (!currentUser.displayName) {
+                    currentUser.displayName = (currentUser.email && currentUser.email.split('@')[0]) || 'Athlete';
+                }
+
+                // Start listening to data
+                subscribeToWorkouts();
+            } else {
+                currentUser = null;
+                document.getElementById('app-section').classList.add('hidden');
+                document.getElementById('app-section').classList.remove('flex');
+                document.getElementById('auth-section').classList.remove('hidden');
+                
+                // Cleanup listener
+                if (unsubWorkouts) {
+                    unsubWorkouts();
+                    unsubWorkouts = null;
+                }
+                
+                // Reset form
+                document.getElementById('auth-password').value = '';
+                document.getElementById('auth-submit').disabled = false;
+                document.getElementById('auth-submit').innerText = isSignUpMode ? 'Create Account' : 'Sign In';
+            }
+        });
+
+
+        function subscribeToWorkouts() {
+            if (!currentUser) return;
+
+            // RULE 1: STRICT PUBLIC PATH FOR LEADERBOARD DATA
+            const workoutsRef = collection(db, 'artifacts', activeAppId, 'public', 'data', 'workouts');
+            
+            // RULE 2: NO COMPLEX QUERIES. Fetch all, sort in JS.
+            const q = query(workoutsRef);
+
+            unsubWorkouts = onSnapshot(q, (snapshot) => {
+                allWorkouts = [];
+                snapshot.forEach((doc) => {
+                    allWorkouts.push({ id: doc.id, ...doc.data() });
+                });
+                
+                // Sort array by timestamp descending (newest first)
+                allWorkouts.sort((a, b) => b.timestamp - a.timestamp);
+                
+                // Re-render active views
+                renderLeaderboard();
+                renderProfile();
+                
+            }, (error) => {
+                console.error("Error fetching workouts:", error);
+                showToast("Failed to sync data", "error");
+            });
+        }
+
+
+        document.getElementById('workout-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!currentUser) return;
+
+            const btn = e.target.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Saving...';
+
+            const exercise = document.getElementById('log-exercise').value.trim();
+            const weight = parseFloat(document.getElementById('log-weight').value);
+            const reps = parseInt(document.getElementById('log-reps').value);
+            const sets = parseInt(document.getElementById('log-sets').value);
+            const notes = document.getElementById('log-notes').value.trim();
+            const date = document.getElementById('log-date').value;
+            const volume = weight * reps * sets;
+
+            const workoutData = {
+                userId: currentUser.uid,
+                userName: currentUser.displayName,
+                exercise: exercise,
+                weight: weight,
+                reps: reps,
+                sets: sets,
+                volume: volume,
+                notes: notes,
+                date: date,
+                timestamp: Date.now()
+            };
+
+            try {
+                const workoutsRef = collection(db, 'artifacts', activeAppId, 'public', 'data', 'workouts');
+                await addDoc(workoutsRef, workoutData);
+                
+                showToast(`Logged ${volume.toLocaleString()} kg! Keep pushing!`);
+                
+                // Reset form inputs except date
+                document.getElementById('log-exercise').value = '';
+                document.getElementById('log-weight').value = '';
+                document.getElementById('log-reps').value = '';
+                document.getElementById('log-sets').value = '';
+                document.getElementById('log-notes').value = '';
+                document.getElementById('live-volume-calc').innerHTML = `0 <span class="text-sm font-normal text-gray-400">kg</span>`;
+                
+                // Switch to leaderboard to see impact
+                switchTab('leaderboard');
+                
+            } catch (error) {
+                console.error("Error saving doc: ", error);
+                showToast("Error saving workout. Try again.", "error");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-plus-circle mr-2"></i> Submit Volume';
+            }
+        });
+
+
+        function renderLeaderboard() {
+            if (document.getElementById('view-leaderboard').classList.contains('hidden')) return;
+
+            const tbody = document.getElementById('leaderboard-body');
+            
+            if (allWorkouts.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" class="text-center py-6 text-gray-500">No workouts logged yet. Be the first!</td></tr>';
+                renderChart({}, []);
+                return;
+            }
+
+            // Aggregate data per user
+            const userTotals = {};
+            const dailyTrends = {}; // { date: { userName: totalVol } }
+
+            allWorkouts.forEach(w => {
+                // Tally Totals
+                if (!userTotals[w.userId]) {
+                    userTotals[w.userId] = { name: w.userName, total: 0 };
+                }
+                userTotals[w.userId].total += w.volume;
+
+                // Tally Daily
+                if (!dailyTrends[w.date]) dailyTrends[w.date] = {};
+                if (!dailyTrends[w.date][w.userName]) dailyTrends[w.date][w.userName] = 0;
+                dailyTrends[w.date][w.userName] += w.volume;
+            });
+
+            // Sort Users by Total Volume (Descending)
+            const sortedUsers = Object.values(userTotals).sort((a, b) => b.total - a.total);
+
+            // Build HTML
+            tbody.innerHTML = '';
+            sortedUsers.forEach((user, index) => {
+                const rank = index + 1;
+                let rankVisual = `<span class="text-gray-400 font-mono text-lg ml-2">${rank}</span>`;
+                
+                // Medals for top 3
+                if(rank === 1) rankVisual = `<i class="fa-solid fa-medal text-yellow-400 text-xl ml-2"></i>`;
+                else if(rank === 2) rankVisual = `<i class="fa-solid fa-medal text-gray-400 text-xl ml-2"></i>`;
+                else if(rank === 3) rankVisual = `<i class="fa-solid fa-medal text-amber-700 text-xl ml-2"></i>`;
+
+                const row = document.createElement('tr');
+                row.className = "border-b border-slate-700/50 hover:bg-slate-800/50 transition";
+                
+                // Highlight current user
+                const isMe = user.name === currentUser.displayName;
+                const nameDisplay = isMe ? `<span class="font-bold text-gym-brand">${user.name} (You)</span>` : `<span class="font-medium text-gray-200">${user.name}</span>`;
+
+                row.innerHTML = `
+                    <td class="py-4 w-16">${rankVisual}</td>
+                    <td class="py-4">${nameDisplay}</td>
+                    <td class="py-4 text-right pr-2 font-mono font-bold text-lg text-white">${user.total.toLocaleString()}</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            // Update Chart
+            renderChart(dailyTrends, sortedUsers.map(u => u.name));
+        }
+
+
+        function renderChart(dailyTrends, allUserNames) {
+            const ctx = document.getElementById('volumeChart');
+            if(!ctx) return;
+
+            // Extract sorted dates (X axis)
+            const dates = Object.keys(dailyTrends).sort((a, b) => new Date(a) - new Date(b));
+            
+            // Define distinct colors for lines
+            const colors = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6'];
+
+            // Build Datasets (one line per user)
+            const datasets = allUserNames.map((name, i) => {
+                const color = colors[i % colors.length];
+                const dataPoints = dates.map(date => {
+                    return dailyTrends[date][name] || 0;
+                });
+
+                return {
+                    label: name,
+                    data: dataPoints,
+                    borderColor: color,
+                    backgroundColor: color + '20',
+                    borderWidth: 3,
+                    pointBackgroundColor: color,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    tension: 0.3,
+                    fill: false
+                };
+            });
+
+            // Destroy existing chart to prevent rendering overlap
+            if (volumeChartInstance) {
+                volumeChartInstance.destroy();
+            }
+
+            // Create new Chart instance
+            volumeChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#f8fafc', font: { family: 'Inter' } }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                            titleFont: { family: 'Inter', size: 14 },
+                            bodyFont: { family: 'Inter', size: 14 },
+                            padding: 12,
+                            cornerRadius: 8,
+                            displayColors: true
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: { color: '#94a3b8' }
+                        },
+                        y: {
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: { color: '#94a3b8' },
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+
+        function renderProfile() {
+            if (document.getElementById('view-profile').classList.contains('hidden') || !currentUser) return;
+
+            const userWorkouts = allWorkouts.filter(w => w.userId === currentUser.uid);
+            
+            // Calculate Total Volume
+            const totalVol = userWorkouts.reduce((sum, w) => sum + w.volume, 0);
+            
+            // Calculate Best Exercise
+            const exerciseTotals = {};
+            userWorkouts.forEach(w => {
+                if(!exerciseTotals[w.exercise]) exerciseTotals[w.exercise] = 0;
+                exerciseTotals[w.exercise] += w.volume;
+            });
+            
+            let bestEx = "None";
+            let bestExVol = 0;
+            for (const [ex, vol] of Object.entries(exerciseTotals)) {
+                if (vol > bestExVol) {
+                    bestExVol = vol;
+                    bestEx = ex;
+                }
+            }
+
+            // Update DOM Stats
+            document.getElementById('profile-total-volume').innerText = totalVol.toLocaleString();
+            document.getElementById('profile-best-exercise').innerText = bestEx;
+            document.getElementById('profile-best-exercise-vol').innerText = `${bestExVol.toLocaleString()} kg total`;
+
+            // Render History List
+            const historyContainer = document.getElementById('profile-history');
+            historyContainer.innerHTML = '';
+
+            if (userWorkouts.length === 0) {
+                historyContainer.innerHTML = '<div class="text-center py-4 text-gray-500">No workouts logged yet.</div>';
+                return;
+            }
+
+            userWorkouts.forEach(w => {
+                const item = document.createElement('div');
+                item.className = "bg-slate-800/50 rounded-xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center border border-slate-700/50 hover:border-slate-600 transition";
+                
+                const notesHtml = w.notes ? `<p class="text-xs text-gray-500 italic mt-1"><i class="fa-solid fa-quote-left mr-1 opacity-50"></i>${w.notes}</p>` : '';
+                
+                item.innerHTML = `
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="text-xs font-semibold text-gym-brand bg-gym-brand/10 px-2 py-0.5 rounded-md">${w.date}</span>
+                            <span class="font-bold text-gray-200">${w.exercise}</span>
+                        </div>
+                        <p class="text-sm text-gray-400">${w.weight}kg × ${w.reps} reps × ${w.sets} sets</p>
+                        ${notesHtml}
+                    </div>
+                    <div class="mt-2 sm:mt-0 text-right">
+                        <span class="text-lg font-bold text-white">${w.volume.toLocaleString()} <span class="text-sm font-normal text-gray-400">kg</span></span>
+                    </div>
+                `;
+                historyContainer.appendChild(item);
+            });
+        }
+
+
+        window.exportDataToCSV = function() {
+            if(!currentUser) return;
+            const userWorkouts = allWorkouts.filter(w => w.userId === currentUser.uid);
+            
+            if(userWorkouts.length === 0) {
+                showToast("No data to export", "error");
+                return;
+            }
+
+            // Define Headers
+            const headers = ["Date", "Exercise", "Weight (kg)", "Reps", "Sets", "Total Volume (kg)", "Notes"];
+            
+            // Map rows (escape quotes and commas in notes)
+            const rows = userWorkouts.map(w => {
+                const safeNotes = w.notes ? `"${w.notes.replace(/"/g, '""')}"` : "";
+                const safeEx = w.exercise ? `"${w.exercise.replace(/"/g, '""')}"` : "";
+                return [w.date, safeEx, w.weight, w.reps, w.sets, w.volume, safeNotes];
+            });
+
+            // Combine into string
+            const csvContent = "data:text/csv;charset=utf-8," 
+                + [headers.join(",")].concat(rows.map(e => e.join(","))).join("\n");
+
+            // Create download link
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `Volume_Challenge_${currentUser.displayName.replace(/\s+/g, '_')}.csv`);
+            document.body.appendChild(link); // Required for Firefox
+            
+            // Trigger download
+            link.click();
+            document.body.removeChild(link);
+            
+            showToast("Export successful!");
+        };
+
+    </script>
+</body>
+</html>
