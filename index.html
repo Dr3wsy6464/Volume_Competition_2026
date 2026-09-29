@@ -1,94 +1,62 @@
 <!doctype html>
 <html lang="en-AU">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#101318">
-  <title>Volume Competition 2026</title>
-  <link rel="stylesheet" href="./style.css">
-  <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#101318"><title>Volume Competition 2026</title>
+<link rel="stylesheet" href="./style.css">
+<script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
 </head>
 <body>
-<header class="shell topbar">
-  <a class="brand" href="./"><span class="brand-icon">↗</span><span>BRO v BRO - VOLUME<span class="brand-sub">COMPETITION / 2026</span></span></a>
-  <button id="logout" class="quiet" hidden>Log out</button>
-</header>
+<header class="shell topbar"><a class="brand" href="./">↗ VOLUME <small>COMPETITION / 2026</small></a><button id="logout" hidden>Log out</button></header>
 <div class="shell"><p id="status" role="status">Connecting…</p><p id="error" role="alert" hidden></p></div>
 <main class="shell">
-  <section id="auth-view" class="panel auth">
-    <span class="eyebrow">TWO ATHLETES. EVERY REP.</span>
-    <h1 id="auth-title">Your next level<br>starts here.</h1>
-    <p>1 November–31 December 2026. External load only.</p>
-    <form id="auth-form">
-      <label id="name-field" hidden>Username<input id="auth-name" maxlength="40" autocomplete="nickname"></label>
-      <label>Email<input id="auth-email" type="email" autocomplete="email" required></label>
-      <label>Password<input id="auth-password" type="password" autocomplete="current-password" required></label>
-      <button id="auth-submit" class="primary" disabled>Sign in</button>
-    </form>
-    <button id="auth-toggle" class="text-button" type="button">Create an account</button>
-  </section>
-  <div id="app-view" hidden>
-    <nav aria-label="Main navigation">
-      <button data-view="train" aria-pressed="true">↗ Train</button>
-      <button data-view="race" aria-pressed="false">♛ Compete</button>
-      <button data-view="history" aria-pressed="false">◷ History</button>
-      <button data-view="profile" aria-pressed="false">◎ Profile</button>
-    </nav>
-    <section id="train" class="view">
-      <div id="idle" class="panel hero">
-        <span class="eyebrow">Created by Drew.</span>
-        <h1>Do you have,<br><em>what it takes?</em></h1>
-        <p id="welcome">Your next session is waiting.</p>
-        <button id="start" class="primary">＋ Start session</button>
-      </div>
-      <section class="panel">
-        <div class="section-title"><h2>Your routines</h2><span class="muted">Tap to load</span></div>
-        <div id="routines" class="chips"></div>
-      </section>
-      <section id="active" class="panel" hidden>
-        <div class="section-title"><div><span class="eyebrow">SESSION IN PROGRESS</span><h2 id="stopwatch">00:00:00</h2></div><button id="discard" class="quiet">Discard</button></div>
-        <form id="session-form">
-          <label>Session name<input id="session-name" maxlength="60" placeholder="e.g. Push day"></label>
-          <div class="session-summary"><span>Session volume</span><strong id="session-volume">0 kg</strong></div>
-          <div id="exercise-blocks"></div>
-          <button id="add-exercise" type="button">＋ Add exercise</button>
-          <div><p class="muted">Quick select</p><div id="quick-list" class="chips"></div></div>
-          <div class="rest"><span>Rest <strong id="rest-clock">Ready</strong></span><button type="button" data-rest="60">60s</button><button type="button" data-rest="90">90s</button><button id="stop-rest" type="button" class="quiet">Stop</button></div>
-          <label>Notes<textarea id="session-notes" maxlength="1000" rows="2" placeholder="GoodLife / Clublime, equipment, how it felt…"></textarea></label>
-          <p class="muted">External weight × reps × sets. Use another block when load or reps change. Up to 12 blocks per session.</p>
-          <div class="actions"><button id="save-routine" type="button">Save as routine</button><button class="primary" type="submit">Finish session ✓</button></div>
-        </form>
-      </section>
-    </section>
-    <section id="race" class="view" hidden>
-      <div class="panel"><span class="eyebrow">THE WEIGHT DIFF</span><h1>Race to the top.</h1><p id="leader-message"></p><div id="leaderboard"></div><p id="payout"></p></div>
-      <div class="panel"><div class="section-title"><h2>Tonnage tug-of-war</h2><select id="opponent" aria-label="Choose competitor"></select></div><div class="rope-labels"><span id="rope-left">You</span><span id="rope-right">Opponent</span></div><div id="rope" class="rope" role="img" aria-label="Volume balance"><div id="rope-fill"></div><span id="rope-knot">◆</span></div><p id="rope-caption" class="muted"></p></div>
-      <div class="panel"><div class="section-title"><h2>Ghost racer</h2><select id="chart-mode" aria-label="Chart mode"><option value="cumulative">Cumulative this week</option><option value="daily">Daily this week</option></select></div><p class="muted">Solid: this week. Dashed: your opponent’s previous week, aligned Monday–Sunday. Includes practice sessions.</p><div class="chart-wrap"><canvas id="chart" role="img" aria-label="Weekly volume and opponent previous-week trajectory"></canvas></div><p id="chart-fallback" hidden>Chart unavailable; leaderboard totals still work.</p></div>
-      <div class="panel boss"><span class="eyebrow">WEEKLY BOSS LIFT</span><h2 id="boss-name"></h2><p id="boss-result"></p><p class="muted">Highest volume for this lift in one session wins the current week’s badge. Monday–Sunday, Brisbane time. Ties share the badge.</p></div>
-    </section>
-    <section id="history" class="view" hidden>
-      <div class="section-title"><h1>Past sessions</h1><button id="export">Export CSV</button></div>
-      <p class="muted">All dates included. Expand a session for its exercise breakdown.</p>
-      <button id="retry" hidden>Retry unsynced changes</button>
-      <div id="session-history"></div>
-    </section>
-    <section id="profile" class="view" hidden>
-      <div class="panel"><span class="eyebrow">ATHLETE PROFILE</span><h1 id="profile-name"></h1><div id="badges" class="chips"></div><div id="stats" class="stats"></div></div>
-      <div class="panel"><h2>Your training footprint</h2><p class="muted">Last 91 Brisbane calendar days. Darker squares = more volume. Tap a square for details.</p><div id="heatmap" class="heatmap" aria-label="Training contribution heatmap"></div><p id="heatmap-detail" class="muted">Every session leaves a mark.</p></div>
-      <div class="panel"><h2>Account settings</h2><form id="profile-form"><label>Username<input id="profile-input" required maxlength="40" autocomplete="nickname"></label><p id="name-cooldown" class="muted"></p><button id="rename" class="primary">Update username</button></form><p class="muted">Username changes require an internet connection and are limited to once every seven days.</p></div>
-    </section>
-  </div>
+<section id="auth-view" class="panel auth"><span class="eyebrow">EVERY SET COUNTS</span><h1>Your next level<br>starts here.</h1>
+<form id="auth-form"><label id="name-field" hidden>Username<input id="auth-name" maxlength="40" autocomplete="nickname"></label><label>Email<input id="auth-email" type="email" required autocomplete="email"></label><label>Password<input id="auth-password" type="password" required autocomplete="current-password"></label><button id="auth-submit" class="primary" disabled>Sign in</button></form><button id="auth-toggle" class="text-button">Create an account</button></section>
+<div id="app-view" hidden>
+<nav aria-label="Main navigation"><button data-view="train" aria-pressed="true">↗ Train</button><button data-view="stats">▥ Stats</button><button data-view="race">♛ Compete</button><button data-view="profile">◎ Profile</button></nav>
+<section id="train" class="view">
+<div id="idle" class="panel hero"><span class="eyebrow">SHOW UP. STACK THE WEIGHT.</span><h1>Ready for <em>liftoff?</em></h1><p id="welcome"></p><button id="start" class="primary">＋ Start session</button></div>
+<div class="panel"><h2>Your routines</h2><div id="routines" class="chips"></div></div>
+<section id="active" class="panel" hidden>
+<div class="heading"><div><span class="eyebrow">SESSION IN PROGRESS</span><h2 id="stopwatch">00:00:00</h2></div><button id="discard" class="danger">Discard</button></div>
+<div class="two"><label>Session name<input id="session-name" maxlength="60" placeholder="e.g. Push day"></label><label>Bodyweight (kg)<input id="bodyweight" type="number" min="20" max="500" step="0.1" inputmode="decimal" placeholder="Optional; remembered"></label></div>
+<div class="session-summary"><span>Completed volume <strong id="session-volume">0 kg</strong></span><span>Density <strong id="live-density">0 kg/min</strong></span></div>
+<div class="toolbar"><label class="inline"><input id="superset-mode" type="checkbox"> Superset Mode</label><select id="superset-target" aria-label="Active superset" hidden></select><button id="new-superset" hidden>＋ New superset</button></div>
+<p class="hint">Superset Mode adds exercises to the selected group. Use each exercise’s Group selector to move existing exercises.</p>
+<div id="exercise-blocks"></div>
+<button id="add-exercise" class="primary wide">＋ Add Exercise</button>
+<p class="hint">Quick select</p><div id="quick-list" class="chips"></div>
+<div class="rest"><span>Rest <strong id="rest-clock">Ready</strong></span><button data-rest="60">60s</button><button data-rest="90">90s</button><button id="stop-rest">Stop</button></div>
+<label>Notes<textarea id="session-notes" maxlength="1000" rows="2" placeholder="Gym, equipment, how it felt…"></textarea></label>
+<p class="hint">External load only. Complete every set before finishing, or remove unfinished sets. Bodyweight is used for ratios, never added to volume.</p>
+<div class="actions"><button id="save-routine">Save routine</button><button id="finish" class="primary">Finish session ✓</button></div>
+</section>
+</section>
+<section id="stats" class="view" hidden>
+<div class="heading"><h1>Exercise lab.</h1><select id="stats-range" aria-label="Stats timeframe"><option value="day">Day</option><option value="week">Week</option><option value="month">Month</option><option value="all" selected>All-Time</option><option value="comp">Comp: Nov 1–Jan 1</option></select></div>
+<p id="stats-period" class="hint"></p><div id="stats-exercises" class="chips exercise-picker"></div>
+<div class="panel"><h2 id="stats-name">Select an exercise</h2><div id="exercise-metrics" class="metrics"></div><div class="chart-wrap"><canvas id="exercise-chart" role="img" aria-label="Exercise volume history"></canvas></div><p class="chart-warning" hidden>Chart unavailable. Numerical statistics remain available.</p><p class="hint">Strength Ratio = best completed external load ÷ that session’s bodyweight. Relative PR Velocity = growth in your best-ever ratio over 30/90 days ending at the selected period’s end (capped at today). Missing bodyweight/baseline → N/A.</p></div>
+</section>
+<section id="race" class="view" hidden>
+<div class="heading"><h1>The weight diff.</h1><select id="race-range" aria-label="Competition timeframe"><option value="comp">Comp: Nov 1–Jan 1</option><option value="day">Day</option><option value="week">Week</option><option value="month">Month</option><option value="all">All-Time</option></select></div>
+<p id="race-period" class="hint"></p>
+<details class="panel athlete-drawer"><summary>Athletes <span class="hint">· select competitors / ★ favorites</span></summary><div id="athletes"></div></details>
+<div class="panel"><h2>Leaderboard</h2><p id="leader-message"></p><div id="leaderboard"></div><p id="payout" class="hint"></p></div>
+<div class="panel"><h2>Volume race track</h2><p class="hint">Selected athletes · bars relative to the selected leader</p><div id="race-track"></div></div>
+<div class="panel"><div class="heading"><h2>Ghost racer</h2><select id="chart-mode" aria-label="Graph mode"><option value="cumulative">Cumulative</option><option value="daily">Daily</option></select></div><p class="hint">Solid: selected timeframe. Dashed: each athlete’s volume seven days earlier, shifted forward. Competition ghosts exclude dates outside the competition.</p><div class="chart-wrap"><canvas id="race-chart" role="img" aria-label="Selected athlete volume and ghost trajectories"></canvas></div><p class="chart-warning" hidden>Chart unavailable. Race track and totals remain available.</p></div>
+<div class="panel boss"><span class="eyebrow">WEEKLY BOSS · ALL TRAINING</span><h2 id="boss-name"></h2><p id="boss-result"></p></div>
+</section>
+<section id="profile" class="view" hidden>
+<div class="panel"><span class="eyebrow">ATHLETE PROFILE</span><h1 id="profile-name"></h1><div id="badges" class="chips"></div><div id="profile-metrics" class="metrics"></div></div>
+<div class="panel"><h2>Training footprint</h2><p class="hint">Last 91 days · darker means more volume</p><div id="heatmap" class="heatmap"></div><p id="heatmap-detail" class="hint">Tap a day.</p></div>
+<div class="panel"><div class="heading"><h2>Session history</h2><button id="export">Export CSV</button></div><button id="retry" hidden>Retry unsynced changes</button><div id="session-history"></div></div>
+<div class="panel"><h2>Account settings</h2><form id="profile-form"><label>Username<input id="profile-input" required maxlength="40" autocomplete="nickname"></label><p id="name-cooldown" class="hint"></p><button id="rename" class="primary">Update username</button></form></div>
+</section>
+</div>
 </main>
-<datalist id="exercise-options"></datalist>
-<noscript>Enable JavaScript to use this tracker.</noscript>
+<datalist id="exercise-options"></datalist><noscript>Enable JavaScript to use this tracker.</noscript>
 <script type="module">
-  import('./app.js').catch(error => {
-    console.error(error);
-    document.getElementById('status').textContent = 'App could not start.';
-    const box = document.getElementById('error');
-    box.hidden = false;
-    box.textContent = 'Could not load the app. Connect to the internet and refresh. Check that app.js and style.css are beside index.html.';
-  });
+import('./app.js').catch(error=>{console.error(error);document.getElementById('status').textContent='App could not start.';const box=document.getElementById('error');box.hidden=false;box.textContent='Connect to the internet and refresh. Check that index.html, style.css and app.js are in the same folder.';});
 </script>
 </body>
 </html>
