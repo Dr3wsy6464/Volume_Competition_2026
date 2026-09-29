@@ -13,16 +13,16 @@
 <section id="auth-view" class="panel auth"><span class="eyebrow">EVERY SET COUNTS</span><h1>Your next level<br>starts here.</h1>
 <form id="auth-form"><label id="name-field" hidden>Username<input id="auth-name" maxlength="40" autocomplete="nickname"></label><label>Email<input id="auth-email" type="email" required autocomplete="email"></label><label>Password<input id="auth-password" type="password" required autocomplete="current-password"></label><button id="auth-submit" class="primary" disabled>Sign in</button></form><button id="auth-toggle" class="text-button">Create an account</button></section>
 <div id="app-view" hidden>
-<nav aria-label="Main navigation"><button data-view="train" aria-pressed="true">↗ Train</button><button data-view="stats">▥ Stats</button><button data-view="race">♛ Compete</button><button data-view="profile">◎ Profile</button></nav>
+<nav aria-label="Main navigation"><button data-view="train" aria-pressed="true">↗ Train</button><button data-view="race">♛ Compete</button><button data-view="stats">▥ Stats</button><button data-view="profile">◎ Profile</button></nav>
 <section id="train" class="view">
 <div id="idle" class="panel hero"><span class="eyebrow">SHOW UP. STACK THE WEIGHT.</span><h1>Ready for <em>liftoff?</em></h1><p id="welcome"></p><button id="start" class="primary">＋ Start session</button></div>
 <div class="panel"><h2>Your routines</h2><div id="routines" class="chips"></div></div>
 <section id="active" class="panel" hidden>
-<div class="heading"><div><span class="eyebrow">SESSION IN PROGRESS</span><h2 id="stopwatch">00:00:00</h2></div><button id="discard" class="danger">Discard</button></div>
+<div class="heading"><div><span class="eyebrow">SESSION IN PROGRESS</span><h2 id="session-reference">Reference pending</h2><h2 id="stopwatch">00:00:00</h2></div><button id="discard" class="danger">Discard</button></div>
 <div class="two"><label>Session name<input id="session-name" maxlength="60" placeholder="e.g. Push day"></label><label>Bodyweight (kg)<input id="bodyweight" type="number" min="20" max="500" step="0.1" inputmode="decimal" placeholder="Optional; remembered"></label></div>
-<div class="session-summary"><span>Completed volume <strong id="session-volume">0 kg</strong></span><span>Density <strong id="live-density">0 kg/min</strong></span></div>
-<div class="toolbar"><label class="inline"><input id="superset-mode" type="checkbox"> Superset Mode</label><select id="superset-target" aria-label="Active superset" hidden></select><button id="new-superset" hidden>＋ New superset</button></div>
-<p class="hint">Superset Mode adds exercises to the selected group. Use each exercise’s Group selector to move existing exercises.</p>
+<div id="edit-times" class="two" hidden><label>Start (Brisbane)<input id="edit-start" type="datetime-local" step="1"></label><label>End (Brisbane)<input id="edit-end" type="datetime-local" step="1"></label></div><label>Routine association<select id="session-routine"></select></label><div class="session-summary"><span>Completed volume <strong id="session-volume">0 kg</strong></span><span>Density <strong id="live-density">0 kg/min</strong></span></div>
+<div class="toolbar"><label class="inline"><input id="superset-mode" type="checkbox"> Superset Mode</label><button id="new-superset" hidden>＋ New superset</button></div>
+<p class="hint">New exercises always start with group None. Create named supersets, then use each exercise’s Group selector to assign members.</p>
 <div id="exercise-blocks"></div>
 <button id="add-exercise" class="primary wide">＋ Add Exercise</button>
 <p class="hint">Quick select</p><div id="quick-list" class="chips"></div>
@@ -33,27 +33,28 @@
 </section>
 </section>
 <section id="stats" class="view" hidden>
-<div class="heading"><h1>Exercise lab.</h1><select id="stats-range" aria-label="Stats timeframe"><option value="day">Day</option><option value="week">Week</option><option value="month">Month</option><option value="all" selected>All-Time</option><option value="comp">Comp: Nov 1–Jan 1</option></select></div>
-<p id="stats-period" class="hint"></p><div id="stats-exercises" class="chips exercise-picker"></div>
-<div class="panel"><h2 id="stats-name">Select an exercise</h2><div id="exercise-metrics" class="metrics"></div><div class="chart-wrap"><canvas id="exercise-chart" role="img" aria-label="Exercise volume history"></canvas></div><p class="chart-warning" hidden>Chart unavailable. Numerical statistics remain available.</p><p class="hint">Strength Ratio = best completed external load ÷ that session’s bodyweight. Relative PR Velocity = growth in your best-ever ratio over 30/90 days ending at the selected period’s end (capped at today). Missing bodyweight/baseline → N/A.</p></div>
+<h1>Training lab.</h1><div id="stats-timeframe"></div>
+<div id="entity-tabs" class="chips"><button data-entity="exercises">Exercises</button><button data-entity="sessions">Sessions</button><button data-entity="routines">Routines</button></div>
+<p class="hint">Tap the active filter again for overall training stats.</p><input id="entity-search" type="search" placeholder="Search exercises, sessions or routines" aria-label="Search analytics entities"><div id="entity-list" class="entity-list"></div>
+<div class="panel"><h2 id="stats-name">Overall training</h2><div id="metric-chips" class="metrics"></div><div class="chart-wrap"><canvas id="exercise-chart" role="img" aria-label="Personal analytics over time"></canvas></div><p class="chart-warning" hidden>Chart unavailable. Numerical statistics remain available.</p><p class="hint">Strength ratio uses the best completed single-set volume divided by that session’s bodyweight. Bodyweight points show the last recorded bodyweight for that day. Missing bodyweight or duration is shown as N/A, never zero.</p></div>
 </section>
 <section id="race" class="view" hidden>
-<div class="heading"><h1>The weight diff.</h1><select id="race-range" aria-label="Competition timeframe"><option value="comp">Comp: Nov 1–Jan 1</option><option value="day">Day</option><option value="week">Week</option><option value="month">Month</option><option value="all">All-Time</option></select></div>
-<p id="race-period" class="hint"></p>
+<h1>The weight diff.</h1><div id="race-timeframe"></div>
 <details class="panel athlete-drawer"><summary>Athletes <span class="hint">· select competitors / ★ favorites</span></summary><div id="athletes"></div></details>
 <div class="panel"><h2>Leaderboard</h2><p id="leader-message"></p><div id="leaderboard"></div><p id="payout" class="hint"></p></div>
 <div class="panel"><h2>Volume race track</h2><p class="hint">Selected athletes · bars relative to the selected leader</p><div id="race-track"></div></div>
-<div class="panel"><div class="heading"><h2>Ghost racer</h2><select id="chart-mode" aria-label="Graph mode"><option value="cumulative">Cumulative</option><option value="daily">Daily</option></select></div><p class="hint">Solid: selected timeframe. Dashed: each athlete’s volume seven days earlier, shifted forward. Competition ghosts exclude dates outside the competition.</p><div class="chart-wrap"><canvas id="race-chart" role="img" aria-label="Selected athlete volume and ghost trajectories"></canvas></div><p class="chart-warning" hidden>Chart unavailable. Race track and totals remain available.</p></div>
+<div class="panel"><div class="heading"><h2>Ghost racer</h2><select id="race-metric" aria-label="Graph metric"><option value="volume">Total Volume</option><option value="density">Session Density</option><option value="average">Average Volume per Session</option><option value="duration">Session Duration</option></select></div><p class="hint">Daily values: solid lines. The same athlete seven days earlier: faded dashed lines. Tap a point for its weekly difference. Competition comparisons exclude sessions outside the competition.</p><div class="chart-wrap"><canvas id="race-chart" role="img" aria-label="Selected athlete volume and ghost trajectories"></canvas></div><p class="chart-warning" hidden>Chart unavailable. Race track and totals remain available.</p></div>
 <div class="panel boss"><span class="eyebrow">WEEKLY BOSS · ALL TRAINING</span><h2 id="boss-name"></h2><p id="boss-result"></p></div>
 </section>
 <section id="profile" class="view" hidden>
 <div class="panel"><span class="eyebrow">ATHLETE PROFILE</span><h1 id="profile-name"></h1><div id="badges" class="chips"></div><div id="profile-metrics" class="metrics"></div></div>
 <div class="panel"><h2>Training footprint</h2><p class="hint">Last 91 days · darker means more volume</p><div id="heatmap" class="heatmap"></div><p id="heatmap-detail" class="hint">Tap a day.</p></div>
-<div class="panel"><div class="heading"><h2>Session history</h2><button id="export">Export CSV</button></div><button id="retry" hidden>Retry unsynced changes</button><div id="session-history"></div></div>
+<details class="panel" id="history-drawer"><summary>Session history</summary><div class="heading history-actions"><button id="export">Export CSV</button><button id="retry" hidden>Retry unsynced changes</button></div><div id="session-history"></div></details>
 <div class="panel"><h2>Account settings</h2><form id="profile-form"><label>Username<input id="profile-input" required maxlength="40" autocomplete="nickname"></label><p id="name-cooldown" class="hint"></p><button id="rename" class="primary">Update username</button></form></div>
 </section>
 </div>
 </main>
+<dialog id="confirm-dialog"><form method="dialog"><h2>Confirm action</h2><p id="confirm-text"></p><div class="actions"><button value="cancel">Cancel</button><button value="confirm" class="danger">Confirm</button></div></form></dialog>
 <datalist id="exercise-options"></datalist><noscript>Enable JavaScript to use this tracker.</noscript>
 <script type="module">
 import('./app.js').catch(error=>{console.error(error);document.getElementById('status').textContent='App could not start.';const box=document.getElementById('error');box.hidden=false;box.textContent='Connect to the internet and refresh. Check that index.html, style.css and app.js are in the same folder.';});

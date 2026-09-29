@@ -1,87 +1,82 @@
-# Volume Competition 2026 — set logging edition
+# Volume Competition 2026 — reference and analytics edition
 
 Replace index.html, style.css and app.js together in your GitHub Pages repository.
 Publish the entire included firestore.rules in Firebase Console → Firestore Database
-→ Rules. The preceding edition's rules reject nested sets, bodyweight and preferences.
-The Firebase project configuration is retained. There is no build step.
+→ Rules. The new reference collections and session fields require these rules.
+No build step is required. Firebase configuration is already included.
 
-## Logging
-- Start Session, optionally enter bodyweight, then add exercises or load a routine.
-- Each row is one set. Complete turns green; only completed sets count as volume.
-  A completed exercise collapses to its name and volume. Reopen to review or undo.
-  Add Set copies the last row's load/reps and creates an incomplete row.
-- Superset Mode creates a named group. New exercises join the selected group.
-  Use each exercise's Group selector to move existing exercises in or out.
-  Rename a group inside its expanded boundary. At least two member exercises are
-  required; the group collapses only when all their sets are complete.
-- Finish requires all included sets to be complete; remove unused rows first.
-- Maximum 30 exercises and 30 sets per exercise in new sessions.
-- Bodyweight is remembered for the next session (and synced as a private preference).
-  It is never added to competition volume. External load only remains the rule.
-- Routines store groups, exercises and set targets; loading resets completion flags.
-- History, deletion and CSV export are now in Profile.
+## References and editing
+Session references use #YYMMDD-N with a global counter for each Brisbane date.
+Firestore transactions reserve the next number and an idempotent claim per session
+and date. Numbers are allocated in server reservation order, not guaranteed physical
+workout chronology. Discarded sessions may leave gaps; numbers are never reused.
+Offline sessions remain usable but show 'pending sync' until an online transaction
+can allocate a unique reference. Existing own sessions receive references online.
 
-## Statistics definitions
-Day = today; Week = current Monday–Sunday; Month = current calendar month;
-All-Time = all logged dates through today; Comp = November 1, 2026 inclusive to
-January 1, 2027 exclusive (so December 31 is the final competition training date).
-All dates use Australia/Brisbane.
+History is a collapsible drawer inside Profile. Each session expands to set details
+and has Edit/Delete controls. Delete uses a modal confirmation. Editing reuses Train
+with start/end timestamps in Brisbane time and editable name, bodyweight, sets, reps,
+loads, groups, notes and routine association. Completed-set inputs unlock by tapping
+its green checkmark; complete the row again before saving. Saving updates the existing
+session ID, so no duplicate totals. Changing the session date allocates a reference
+for the new date. Editing flat legacy logs converts that group to one modern session
+and deletes the original flat records in the same batch. Unknown legacy duration
+must be entered before saving. Do not edit one session simultaneously on two devices.
 
-Exercise Stats aggregate repeated exercise blocks in a session as one session:
-- Total Volume = sum of completed external weight × reps.
-- Average Volume/Session = that volume / number of sessions containing the exercise.
-- Reps = sum of completed repetitions, not number of sets.
-- Strength Ratio = best completed set weight / bodyweight recorded in that session.
-- Relative PR Velocity = percentage increase in best-ever Strength Ratio over the
-  last 30 or 90 days. Reference endpoint is the selected period's exclusive end,
-  capped at tomorrow. Baseline uses records before endpoint minus 30/90 days;
-  current PR uses all records before endpoint. No bodyweight/baseline gives N/A.
-  For example, a prior best ratio of 1.00× and current 1.20× gives +20%.
-- Session Density = session volume / full session duration in minutes, including
-  rest. Aggregated density is total volume / total minutes for timed sessions only.
-  Untimed legacy sessions are excluded from density, not from total volume.
+## Logging and supersets
+Every Add Exercise/quick-select starts with group None. Superset Mode permits group
+creation and assignment through each exercise's Group selector. Deleting a group or
+turning Superset Mode off preserves all exercises/sets and returns their group to
+None. Exercise headers show Set Volume PR (best single set's external load × reps)
+and total volume across matching blocks in the most recent other session.
+Checkmark toggles completion; the adjacent red X deletes that particular set.
+New sessions support 30 exercises × 30 sets. External loads only; bodyweight never
+adds to volume. Templates preserve group/target data and reset completion on load.
 
-The Compete filter applies to leaderboard totals, session counts, average session
-volume, density, track lanes and graph. Athlete favorites are independent of
-selection. The global filtered leaderboard includes everyone; checked athletes
-appear in the track/graph. A unique global leader gets the crown. No selections
-shows an empty graph with a prompt instead of silently choosing someone.
+## Unified timeframes
+Both Compete and Stats offer Day, Week, Month, All Time, Custom range, then Comp.
+An anchor date and previous/next arrows browse periods. Fixed weeks are Monday–Sunday;
+rolling weeks start on the anchor weekday. Fixed months are calendar months; rolling
+months run anchor date to the day before that date in the next month, clamped for
+shorter months. Month navigation uses the original anchor so January 31 → February 28
+→ March 31. Custom endpoints are inclusive; arrows shift by that range's length.
+Comp is Nov 1, 2026 inclusive through Dec 31, with Jan 1, 2027 exclusive.
+All calendar calculations use Brisbane dates. All Time and Comp arrows are disabled.
 
-Ghost trajectories use each selected athlete's recorded volume seven days earlier,
-shifted forward; they are not forecasts. Competition ghosts exclude data outside
-competition dates. Chart legends are below the graphs. Track bars normalize against
-the selected leader; they do not represent a fixed competition finish target.
-Payout is shown only for the competition filter: winning volume / 1000 in AUD.
+## Compete and Stats
+Checked athletes alone appear in the leaderboard, race track, graph and weekly boss
+comparison. Favorites only affect drawer ordering. The chart uses daily metric values
+for Volume, Density, Average Volume/Session or Duration; units appear on the axis.
+One circle/name legend entry controls both that athlete's solid line and faded dashed
+line. Dashed values come from seven days earlier. Tooltips show the daily value and
+its difference vs seven days earlier. Competition ghosts exclude noncompetition dates.
+Duration is daily total minutes; density is total timed-session volume / total minutes.
+Unknown duration is excluded. No selected athletes gives an explicit empty state.
 
-Weekly boss, training streak, heatmap and lifetime/RPG statistics remain available.
-Weekly boss rotates Deadlift/Squat/Bench Press, using all training in the current
-Brisbane Monday–Sunday week. Streak requires gaps strictly under 48 hours and counts
-unique training dates. The elephant equivalent remains illustrative at 6,000 kg.
+Stats category controls are mutually exclusive; clicking the active one deselects it
+and shows overall training. Search narrows the entity list. Clicking an entity isolates
+its history; clicking it again clears that selection. Routine statistics use persisted
+routineId links. Older unlinked sessions can be associated through Edit session.
+Metric chips show the selected period's totals/current values and switch the chart:
+- Total Volume: sum of completed weight × reps.
+- Completed Reps: sum of completed reps.
+- Body Weight: latest known session bodyweight; graph shows last known value per day.
+- Strength Ratio: maximum completed set volume / that session's bodyweight.
+- Set Volume PR: highest single-set volume within the selected scope/timeframe.
+Missing bodyweight/duration is N/A and a graph gap, not a fabricated zero.
+Profile rank includes all athletes and competition dates; ties share the same rank.
+The elephant equivalent and Relative PR Velocity metrics have been removed.
 
-## Data, offline and compatibility
-New documents keep the sessions collection and add schemaVersion: 3, bodyweight,
-and exercises[].sets[] with weight, reps and complete fields. Superset ID/name are
-stored on each exercise. Older session records expand their sets count into rows;
-legacy flat workouts remain readable and are grouped by date/session label. Neither
-format is copied into another collection, so totals are not duplicated. Historic
-sessions without bodyweight show N/A ratios; no current bodyweight is backfilled.
+## Offline, permissions and verification
+Persistent Firestore cache and a per-account local outbox preserve offline work.
+Open and sign in online first; no service worker is included for offline cold starts.
+Keep browser data until all writes are acknowledged. Errors remain visible and Retry
+is available in Profile → Session history. Transient writes retry when online.
+Rules restrict session/profile/routine/preference mutations to owners and retain the
+server-enforced seven-day username cooldown. Shared session/profile data is readable
+by signed-in users; routines/preferences are private. Counters are shared coordination
+documents. This remains a trust-based challenge: rules do not prove a lift occurred.
 
-Private user settings are at users/{uid}/settings/competition. Exercise memory and
-routines retain their existing private paths. Shared profiles/sessions can be read
-by signed-in users; only owners can mutate data. The seven-day username cooldown
-uses server timestamps and prevents profile deletion as a bypass. Rules enforce
-ownership and top-level shape; nested numerical validation is performed in the app.
-This remains a trust-based challenge, not an audited prize system.
-
-Firestore IndexedDB persistence and the per-account local session outbox remain.
-Offline finishes keep a stable document ID and stay pending until server confirmation.
-Open and sign in online before the gym; this three-file app has no service worker
-for guaranteed offline cold starts. Do not clear browser data while writes are
-pending. Use one editing tab/device at a time for the active session.
-
-## Verification
-Run node tests/test-logic.cjs for the included mocked regression tests.
-No Firebase production accounts/data/rules or GitHub deployment were changed here.
-Live Firebase rule compilation, actual IndexedDB and visual browser QA still need
-checking. Test own writes, forbidden other-user edits, and the username cooldown
-in Firebase Rules Playground before using the new rules for the competition.
+See VALIDATION.md. The supplied tests use mocked Firebase and a minimal DOM.
+No production data, Firebase rules or GitHub deployment was changed by this task.
+Test rules in Firebase Rules Playground and perform a two-account live smoke test.
