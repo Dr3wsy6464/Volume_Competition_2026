@@ -3,7 +3,7 @@ import { getAuth, setPersistence, browserLocalPersistence, onAuthStateChanged, c
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, doc, onSnapshot, setDoc, serverTimestamp, runTransaction, writeBatch } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 
 const firebaseConfig = {
-  apiKey: 'AIzaSyAIz_p5UDLaD7gcTdKE-WXEbuoRL4TWSsM',
+  apiKey: 'AIzaSyB3gR2Lu5Lj0OLVgv83Qdu2DGMqCThL0wg',
   authDomain: 'volume-competition.firebaseapp.com',
   projectId: 'volume-competition',
   storageBucket: 'volume-competition.firebasestorage.app',
